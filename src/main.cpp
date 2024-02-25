@@ -12,7 +12,14 @@ class FPETool {
 
 public:
 
-    static std::string trim_trailing_zeros(const std::string &str) {
+    static std::string trim_leading_zerors(const std::string& str) {
+        size_t start = str.find_first_not_of('0');
+        if (start == std::string::npos) {
+            return "0";
+        }
+        return str.substr(start);
+    }
+    static std::string trim_trailing_zeros(const std::string& str) {
         size_t end = str.find_last_not_of('0');
         if (end == std::string::npos) {
             return str;
@@ -20,14 +27,12 @@ public:
         return str.substr(0, end + 1);
     }
 
-    static std::string encrypt(const std::string &num_str, const std::string &key) {
+    static std::string encrypt(const std::string& num_str, const std::string& key) {
         int num_str_length = num_str.length();
         std::string fixed_num_str = num_str;
         if (num_str_length < MIN_LENGTH) {
-            for (int i = 0; i < MIN_LENGTH - num_str_length; ++i) {
-                fixed_num_str = '0' + fixed_num_str;
-            }
-            num_str_length = MIN_LENGTH;
+            std::string padding(MIN_LENGTH - num_str_length , '0');
+            fixed_num_str = padding + fixed_num_str;
         }
 
         const std::string fpe_key_str = key.empty() ? FPETool::DEFAULT_KEY : key;
@@ -56,7 +61,7 @@ public:
         return result;
     }
 
-    static std::string encrypt_num(const std::string &num_str, const std::string &key) {
+    static std::string encrypt_num(const std::string& num_str, const std::string& key) {
         std::string num_flag;
         if (num_str[0] == '-') {
             num_flag = "-";
@@ -78,7 +83,7 @@ public:
         return num_flag + FIXED_NUM + encrypted_int_Part + encrypted_dec_part;
     }
 
-    static std::string decrypt(const std::string &num_str, const std::string &key) {
+    static std::string decrypt(const std::string& num_str, const std::string& key) {
         int num_str_length = num_str.length();
 
         const std::string fpe_key_str = key.empty() ? FPETool::DEFAULT_KEY : key;
@@ -107,7 +112,7 @@ public:
         return result;
     }
 
-    static std::string decrypt_num(std::string &num_str, const std::string &key) {
+    static std::string decrypt_num(std::string& num_str, const std::string& key) {
         std::string num_flag;
         if (num_str[0] == '-') {
             num_flag = "-";
@@ -117,22 +122,15 @@ public:
         std::string encrypted_dec_part;
         size_t dot_pos = num_str.find('.');
         std::string int_part = num_str.substr(1, dot_pos - 1);
-        std::string decrypted_int_part = std::to_string(std::stoi(decrypt(int_part, key)));
+        std::string decrypted_int_part = trim_leading_zerors(decrypt(int_part, key));
 
         std::string decrypted_dec_part;
         if (dot_pos != std::string::npos) {
             std::string dec_part = num_str.substr(dot_pos + 1, num_str.length() - dot_pos - 2);
             decrypted_dec_part = decrypt(dec_part, key);
-            std::cout << "decrypted_dec_part" << std::endl;
-            std::cout << decrypted_dec_part << std::endl;
-            auto dec_int_part = std::stoll(decrypted_dec_part) / EXPANDED;
-            decrypted_dec_part = std::to_string(dec_int_part);
-            std::cout << decrypted_dec_part << std::endl;
-            size_t dec_dot_pos = decrypted_dec_part.find('.');
-            if (dec_dot_pos != std::string::npos) {
-                decrypted_dec_part = decrypted_dec_part.substr(dec_dot_pos + 1, decrypted_dec_part.length() - dot_pos);
-            }
-
+            int expanded_length = std::to_string(static_cast<long long>(EXPANDED)).length() - 1;
+            std::string leading_zeros(expanded_length - decrypted_dec_part.length(), '0');
+            decrypted_dec_part = leading_zeros + decrypted_dec_part;
             decrypted_dec_part = trim_trailing_zeros(decrypted_dec_part);
             decrypted_dec_part = '.' + decrypted_dec_part;
         }
@@ -155,11 +153,9 @@ const std::string FPETool::DEFAULT_KEY = "abcdefghijk12345abcdefghijk12345";
 
 int main() {
 
-    std::cout << 3123234000000 / (100000.0 * 1000000000.0) << std::endl;
-
     std::string key = "abcdefghijk12345abcdefghijk12345";;
 
-    std::string num_str = "88689154.03123234";
+    std::string num_str = "123123.0102";
     std::cout << "original_str:" << num_str << std::endl;
 
     std::string encrypt_str = FPETool::encrypt_num(num_str, key);
