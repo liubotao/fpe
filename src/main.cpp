@@ -3,6 +3,7 @@
 #include <sstream>
 #include <cmath>
 #include <vector>
+#include <gmp.h>
 
 #include <ubiq/fpe/ff1.h>
 #include <iomanip>
@@ -10,11 +11,20 @@
 class FPETool {
 
 public:
+
+    static std::string trim_trailing_zeros(const std::string &str) {
+        size_t end = str.find_last_not_of('0');
+        if (end == std::string::npos) {
+            return str;
+        }
+        return str.substr(0, end + 1);
+    }
+
     static std::string encrypt(const std::string &num_str, const std::string &key) {
         int num_str_length = num_str.length();
         std::string fixed_num_str = num_str;
         if (num_str_length < MIN_LENGTH) {
-            for (int i = 0; i < MIN_LENGTH - num_str_length; i++) {
+            for (int i = 0; i < MIN_LENGTH - num_str_length; ++i) {
                 fixed_num_str = '0' + fixed_num_str;
             }
             num_str_length = MIN_LENGTH;
@@ -46,18 +56,7 @@ public:
         return result;
     }
 
-    static std::string encrypt_num(double number, const std::string &key) {
-        // 判断是否为整数
-        bool is_int = (std::floor(number) == number);
-
-        // 数字转换为字符串时，避免精度的丢失
-        std::ostringstream stream;
-        stream << std::fixed << std::setprecision(PRECISION) << number;
-        std::string num_str = stream.str();
-
-        std::cout << "----" << std::endl;
-        std::cout << num_str << std::endl;
-
+    static std::string encrypt_num(const std::string &num_str, const std::string &key) {
         std::string num_flag;
         if (num_str[0] == '-') {
             num_flag = "-";
@@ -67,9 +66,13 @@ public:
         size_t dot_pos = num_str.find('.');
         std::string int_part = num_str.substr(0, dot_pos);
         std::string encrypted_int_Part = encrypt(int_part, key);
-        if (!is_int) {
+        if (dot_pos != std::string::npos) {
             std::string dec_part = num_str.substr(dot_pos + 1);
-            encrypted_dec_part = "." + encrypt(dec_part, key) + FIXED_NUM;
+            dec_part = "0." + dec_part;
+            double dec_part_num = std::stod(dec_part);
+            dec_part_num = dec_part_num * EXPANDED;
+            auto dec_int_part = static_cast<long long>(dec_part_num);
+            encrypted_dec_part = "." + encrypt(std::to_string(dec_int_part), key) + FIXED_NUM;
         }
 
         return num_flag + FIXED_NUM + encrypted_int_Part + encrypted_dec_part;
@@ -104,7 +107,7 @@ public:
         return result;
     }
 
-    static std::string decrypt_num(std::string& num_str, const std::string &key) {
+    static std::string decrypt_num(std::string &num_str, const std::string &key) {
         std::string num_flag;
         if (num_str[0] == '-') {
             num_flag = "-";
@@ -120,12 +123,17 @@ public:
         if (dot_pos != std::string::npos) {
             std::string dec_part = num_str.substr(dot_pos + 1, num_str.length() - dot_pos - 2);
             decrypted_dec_part = decrypt(dec_part, key);
-
-            size_t last_non_zero = decrypted_dec_part.find_last_not_of('0');
-            if (last_non_zero != std::string::npos) {
-                decrypted_dec_part = decrypted_dec_part.substr(0, last_non_zero + 1);
+            std::cout << "decrypted_dec_part" << std::endl;
+            std::cout << decrypted_dec_part << std::endl;
+            auto dec_int_part = std::stoll(decrypted_dec_part) / EXPANDED;
+            decrypted_dec_part = std::to_string(dec_int_part);
+            std::cout << decrypted_dec_part << std::endl;
+            size_t dec_dot_pos = decrypted_dec_part.find('.');
+            if (dec_dot_pos != std::string::npos) {
+                decrypted_dec_part = decrypted_dec_part.substr(dec_dot_pos + 1, decrypted_dec_part.length() - dot_pos);
             }
 
+            decrypted_dec_part = trim_trailing_zeros(decrypted_dec_part);
             decrypted_dec_part = '.' + decrypted_dec_part;
         }
 
@@ -139,7 +147,7 @@ private:
     static const std::string DEFAULT_KEY;
     static const int MIN_LENGTH = 6;
     static const char FIXED_NUM = '1';
-    constexpr static const double EXPANDED = 100;
+    constexpr static const double EXPANDED = 100000.0 * 1000000000.0;
     constexpr static const uint8_t TWEAK[] = {};
 };
 
@@ -147,16 +155,14 @@ const std::string FPETool::DEFAULT_KEY = "abcdefghijk12345abcdefghijk12345";
 
 int main() {
 
-    std::string key = "abcdefghijk12345abcdefghijk12345";
+    std::cout << 3123234000000 / (100000.0 * 1000000000.0) << std::endl;
 
-    //double value = 123456789;
-//    std::string decrypt_str = FPETool::decrypt(encrypt_str, key);
-//    std::cout << "decrypt_str:" << decrypt_str << std::endl;
+    std::string key = "abcdefghijk12345abcdefghijk12345";;
 
-    double num = 12.49;
-    std::cout << "original_str:" << std::to_string(num) << std::endl;
+    std::string num_str = "88689154.03123234";
+    std::cout << "original_str:" << num_str << std::endl;
 
-    std::string encrypt_str = FPETool::encrypt_num(num, key);
+    std::string encrypt_str = FPETool::encrypt_num(num_str, key);
     std::cout << "encrypt_str:" << std::endl;
     std::cout << encrypt_str << std::endl;
 
