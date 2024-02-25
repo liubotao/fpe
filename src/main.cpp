@@ -3,7 +3,6 @@
 #include <sstream>
 #include <cmath>
 #include <vector>
-#include <gmp.h>
 
 #include <ubiq/fpe/ff1.h>
 #include <iomanip>
@@ -12,7 +11,7 @@ class FPETool {
 
 public:
 
-    static std::string trim_leading_zerors(const std::string& str) {
+    static std::string trim_leading_zeros(const std::string& str) {
         size_t start = str.find_first_not_of('0');
         if (start == std::string::npos) {
             return "0";
@@ -122,7 +121,7 @@ public:
         std::string encrypted_dec_part;
         size_t dot_pos = num_str.find('.');
         std::string int_part = num_str.substr(1, dot_pos - 1);
-        std::string decrypted_int_part = trim_leading_zerors(decrypt(int_part, key));
+        std::string decrypted_int_part = trim_leading_zeros(decrypt(int_part, key));
 
         std::string decrypted_dec_part;
         if (dot_pos != std::string::npos) {
@@ -141,7 +140,6 @@ public:
     }
 
 private:
-    static const int PRECISION = 14;
     static const std::string DEFAULT_KEY;
     static const int MIN_LENGTH = 6;
     static const char FIXED_NUM = '1';
