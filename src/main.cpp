@@ -3,7 +3,6 @@
 #include "fpe.h"
 
 int main() {
-    std::cout << "new day" << std::endl;
 
     std::string key = "abcdefghijk12345abcdefghijk12345";;
 
