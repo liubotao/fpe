@@ -13,7 +13,7 @@ project(fpe)
 set(CMAKE_CXX_STANDARD 17)
 
 # 定义一个可执行文件
-add_executable(fpe src/main.cpp)
+add_executable(fpe src/main.cpp src/fpe.cpp)
 
 # 引入静态库
 add_library(ubiqfpe STATIC IMPORTED)
